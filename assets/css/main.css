@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #10b77f;
+  --color-primary-dark: #0d9366;
+  --color-background-light: #ffffff;
+  --color-background-dark: #10221c;
+  --color-text-main: #111816;
+  --color-text-sub: #61897c;
+  --color-border-light: #e5e7eb;
+  
+  --color-surface-light: #ffffff;
+  --color-surface-dark: #1a2c26;
+
+  --font-display: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  --shadow-premium: 0 10px 40px -10px rgba(0,0,0,0.05);
+}
+
+body {
+  @apply antialiased font-body;
+}

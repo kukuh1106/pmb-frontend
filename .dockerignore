@@ -1,0 +1,9 @@
+node_modules
+.output
+.nuxt
+.git
+.gitignore
+.env
+dist
+README.md
+qa_wrappers
