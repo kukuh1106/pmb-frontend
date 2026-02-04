@@ -24,6 +24,7 @@ const isMobileMenuOpen = ref(false)
           <nav class="flex gap-6">
             <NuxtLink class="text-sm font-medium text-text-main hover:text-primary transition-colors dark:text-gray-200 dark:hover:text-primary" to="#">Program Studi</NuxtLink>
             <NuxtLink class="text-sm font-medium text-text-main hover:text-primary transition-colors dark:text-gray-200 dark:hover:text-primary" to="#">Cara Mendaftar</NuxtLink>
+            <NuxtLink class="text-sm font-medium text-text-main hover:text-primary transition-colors dark:text-gray-200 dark:hover:text-primary" to="/cek-kelulusan">Cek Kelulusan</NuxtLink>
           </nav>
           <NuxtLink to="/login" class="flex items-center justify-center rounded-md border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors dark:hover:bg-primary/20">
             Masuk
@@ -42,6 +43,7 @@ const isMobileMenuOpen = ref(false)
         <div class="space-y-1 px-4 py-6">
           <NuxtLink to="#" class="block py-3 text-base font-medium text-text-main hover:text-primary dark:text-gray-200 dark:hover:text-primary">Program Studi</NuxtLink>
           <NuxtLink to="#" class="block py-3 text-base font-medium text-text-main hover:text-primary dark:text-gray-200 dark:hover:text-primary">Cara Mendaftar</NuxtLink>
+          <NuxtLink to="/cek-kelulusan" class="block py-3 text-base font-medium text-text-main hover:text-primary dark:text-gray-200 dark:hover:text-primary">Cek Kelulusan</NuxtLink>
           <div class="pt-4 mt-4 border-t border-gray-100 dark:border-white/10">
             <NuxtLink to="/login" class="flex w-full items-center justify-center rounded-md border border-primary px-4 py-3 text-base font-medium text-primary hover:bg-primary/5 transition-colors">
               Masuk
@@ -68,8 +70,9 @@ const isMobileMenuOpen = ref(false)
                 <NuxtLink to="/register" class="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-base font-bold text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all">
                   Mulai Pendaftaran
                 </NuxtLink>
-                <NuxtLink to="#" class="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-base font-medium text-text-main border border-border-light hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 transition-all dark:bg-transparent dark:text-white dark:border-white/20 dark:hover:bg-white/10">
-                  Jelajahi Program
+                <NuxtLink to="/cek-kelulusan" class="inline-flex items-center justify-center rounded-md bg-white px-6 py-3 text-base font-medium text-text-main border border-border-light hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 transition-all dark:bg-transparent dark:text-white dark:border-white/20 dark:hover:bg-white/10">
+                  <span class="material-symbols-outlined text-lg mr-2">school</span>
+                  Cek Kelulusan
                 </NuxtLink>
               </div>
             </div>
@@ -152,6 +155,7 @@ const isMobileMenuOpen = ref(false)
             <span class="font-bold text-lg">UIN K.H. Abdurrahman Wahid</span>
           </div>
           <div class="flex flex-wrap justify-center gap-8">
+            <NuxtLink class="text-sm text-text-sub hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors" to="/cek-kelulusan">Cek Kelulusan</NuxtLink>
             <NuxtLink class="text-sm text-text-sub hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors" to="#">Kebijakan Privasi</NuxtLink>
             <NuxtLink class="text-sm text-text-sub hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors" to="#">Syarat dan Ketentuan</NuxtLink>
             <NuxtLink class="text-sm text-text-sub hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors" to="#">Hubungi Kami</NuxtLink>
