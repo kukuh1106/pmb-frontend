@@ -250,7 +250,7 @@ const getStatusColor = (status: string) => {
       </div>
       
       <!-- Card 3: Jadwal -->
-      <div class="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-sm border flex flex-col gap-4 hover:shadow-md transition-shadow group"
+      <div class="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-sm border flex flex-col gap-4 hover:shadow-md transition-shadow relative overflow-hidden group"
            :class="steps[2]?.active ? 'border-primary/20 shadow-lg shadow-primary/5 ring-1 ring-primary/30' : steps[2]?.completed ? 'border-slate-100 dark:border-white/5' : 'border-slate-100 dark:border-white/5 opacity-90'">
         <div class="absolute top-0 right-0 p-4" v-if="steps[2]?.completed">
           <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 text-primary">

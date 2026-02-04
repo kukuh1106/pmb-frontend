@@ -56,6 +56,11 @@ export const usePendaftarApi = () => {
     return api.upload<Dokumen>('/pendaftar/dokumen', formData)
   }
 
+  // Pendaftar: Get list of uploaded documents
+  const getDokumen = async (): Promise<ApiResponse<Dokumen[]>> => {
+    return api.get<Dokumen[]>('/pendaftar/dokumen')
+  }
+
   // Pendaftar: Upload foto
   const uploadFoto = async (file: File): Promise<ApiResponse<{ foto_path: string }>> => {
     const formData = new FormData()
@@ -97,6 +102,7 @@ export const usePendaftarApi = () => {
     getBiodata,
     updateBiodata,
     uploadDokumen,
+    getDokumen,
     uploadFoto,
     getJadwalList,
     pilihJadwal,

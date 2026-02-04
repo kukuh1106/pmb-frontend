@@ -27,10 +27,9 @@ const uploadedDocs = ref<Dokumen[]>([])
 // Fetch existing documents
 onMounted(async () => {
   try {
-    const response = await pendaftarApi.getBiodata()
+    const response = await pendaftarApi.getDokumen()
     if (response.success && response.data) {
-      // Note: We'll need a separate endpoint or include documents in biodata
-      // For now, we'll create a mock structure
+      uploadedDocs.value = response.data
     }
   } catch (error) {
     console.error('Failed to load documents:', error)

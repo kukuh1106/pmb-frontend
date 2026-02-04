@@ -123,6 +123,7 @@ export interface Dokumen {
   jenis_dokumen: 'ijazah' | 'transkrip' | 'ktp' | 'pas_foto' | 'surat_rekomendasi' | 'proposal' | 'lainnya'
   file_name: string
   file_path: string
+  file_url?: string
   file_size: number
   status_verifikasi: 'pending' | 'valid' | 'tidak_valid'
   catatan?: string
