@@ -134,7 +134,7 @@ export interface PendaftarDashboard {
   pendaftar: {
     nomor_pendaftaran: string
     nama_lengkap: string
-    status_pendaftaran: string
+    status_pendaftaran: 'registrasi' | 'biodata_lengkap' | 'jadwal_dipilih' | 'selesai'
     status_kelulusan: string
     nilai_ujian?: number
   }
@@ -149,11 +149,14 @@ export interface PendaftarDashboard {
     ruang: string
   }
   biodata_lengkap: boolean
+  dokumen_lengkap: boolean
   dokumen: {
     total: number
     valid: number
     pending: number
     tidak_valid: number
+    required: string[]
+    missing: string[]
   }
 }
 

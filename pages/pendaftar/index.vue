@@ -12,44 +12,47 @@ const router = useRouter()
 const isLoading = ref(true)
 const dashboard = ref<PendaftarDashboard | null>(null)
 
-// Steps definition
+// Steps definition - based on status_pendaftaran from API
 const steps = computed(() => {
   if (!dashboard.value) return []
   
   const status = dashboard.value.pendaftar.status_pendaftaran
   const biodataComplete = dashboard.value.biodata_lengkap
-  const dokumenComplete = dashboard.value.dokumen.total > 0 && dashboard.value.dokumen.pending === 0 && dashboard.value.dokumen.tidak_valid === 0
-  const jadwalSelected = status === 'jadwal_dipilih' || status === 'selesai'
-  const finalized = status === 'selesai'
+  const dokumenComplete = dashboard.value.dokumen_lengkap
+  
+  // Status progression: registrasi -> biodata_lengkap -> jadwal_dipilih -> selesai
+  const statusOrder = ['registrasi', 'biodata_lengkap', 'jadwal_dipilih', 'selesai']
+  const currentStatusIndex = statusOrder.indexOf(status)
 
   return [
     { 
       name: 'Biodata', 
       icon: 'person', 
-      completed: biodataComplete,
-      active: !biodataComplete,
+      completed: biodataComplete || currentStatusIndex >= 1,
+      active: !biodataComplete && currentStatusIndex === 0,
       route: '/pendaftar/biodata'
     },
     { 
       name: 'Dokumen', 
       icon: 'upload_file', 
-      completed: dokumenComplete,
+      completed: dokumenComplete && currentStatusIndex >= 1,
       active: biodataComplete && !dokumenComplete,
       route: '/pendaftar/dokumen'
     },
     { 
       name: 'Jadwal', 
       icon: 'calendar_month', 
-      completed: jadwalSelected,
-      active: dokumenComplete && !jadwalSelected,
+      completed: currentStatusIndex >= 2,
+      active: biodataComplete && dokumenComplete && currentStatusIndex < 2,
       route: '/pendaftar/jadwal'
     },
     { 
       name: 'Finalisasi', 
       icon: 'badge', 
-      completed: finalized,
-      active: jadwalSelected && !finalized,
-      locked: !jadwalSelected
+      completed: currentStatusIndex >= 3,
+      active: currentStatusIndex === 2,
+      locked: currentStatusIndex < 2,
+      canDownloadKartu: currentStatusIndex >= 2 // Can download kartu after jadwal selected
     }
   ]
 })
@@ -283,25 +286,28 @@ const getStatusColor = (status: string) => {
       
       <!-- Card 4: Kartu Pendaftaran -->
       <div class="rounded-xl p-6 shadow-none border flex flex-col gap-4 relative overflow-hidden"
-           :class="steps[3]?.locked ? 'bg-gray-50 dark:bg-white/5 border-slate-100 dark:border-white/5 opacity-75' : 'bg-white dark:bg-surface-dark border-slate-100 dark:border-white/5'">
+           :class="steps[3]?.locked ? 'bg-gray-50 dark:bg-white/5 border-slate-100 dark:border-white/5 opacity-75' : steps[3]?.active ? 'bg-white dark:bg-surface-dark border-primary/20 shadow-lg shadow-primary/5 ring-1 ring-primary/30' : 'bg-white dark:bg-surface-dark border-slate-100 dark:border-white/5'">
         <div v-if="steps[3]?.locked" class="absolute top-3 right-3 text-gray-400">
           <span class="material-symbols-outlined text-xl">lock</span>
         </div>
-        <div v-if="steps[3]?.completed" class="absolute top-0 right-0 p-4">
+        <div v-if="steps[3]?.active" class="absolute top-0 right-0 p-4">
+          <span class="bg-primary/10 text-primary text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wider">Aktif</span>
+        </div>
+        <div v-else-if="steps[3]?.completed" class="absolute top-0 right-0 p-4">
           <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 text-primary">
             <span class="material-symbols-outlined text-sm font-bold">check</span>
           </span>
         </div>
         <div class="w-12 h-12 rounded-full flex items-center justify-center border"
-             :class="steps[3]?.completed ? 'bg-green-50 dark:bg-primary/10 text-primary border-transparent' : 'bg-white dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/5'">
+             :class="steps[3]?.active ? 'bg-primary text-white shadow-md shadow-primary/20 border-transparent' : steps[3]?.completed ? 'bg-green-50 dark:bg-primary/10 text-primary border-transparent' : 'bg-white dark:bg-white/5 text-gray-400 border-gray-100 dark:border-white/5'">
           <span class="material-symbols-outlined text-2xl">badge</span>
         </div>
         <div class="flex flex-col gap-1">
           <h3 :class="steps[3]?.locked ? 'text-gray-600 dark:text-gray-400' : 'text-text-main dark:text-white'" class="text-lg font-bold leading-tight">Kartu Pendaftaran</h3>
-          <p class="text-gray-400 text-sm leading-normal">Unduh kartu ujian Anda setelah verifikasi.</p>
+          <p class="text-gray-400 text-sm leading-normal">Unduh kartu ujian Anda setelah memilih jadwal.</p>
         </div>
         <div class="mt-auto pt-2">
-          <NuxtLink v-if="steps[3]?.completed" to="/pendaftar/kartu" 
+          <NuxtLink v-if="steps[3]?.canDownloadKartu" to="/pendaftar/kartu" 
                     class="w-full h-10 rounded-lg bg-primary text-white hover:bg-[#0e9f6e] font-bold text-sm shadow-sm transition-colors flex items-center justify-center gap-2">
             <span class="material-symbols-outlined text-sm">download</span>
             <span>Unduh Kartu</span>
