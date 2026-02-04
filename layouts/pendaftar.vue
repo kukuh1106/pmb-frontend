@@ -1,3 +1,28 @@
+<script setup lang="ts">
+const auth = useAuth()
+const router = useRouter()
+
+// Initialize auth and check if user is logged in
+onMounted(() => {
+  auth.initAuth()
+  
+  if (!auth.isAuthenticated.value || auth.role.value !== 'pendaftar') {
+    router.push('/login')
+  }
+})
+
+const handleLogout = async () => {
+  await auth.logout()
+}
+
+// Get user initials for avatar
+const userInitials = computed(() => {
+  if (!auth.user.value) return 'U'
+  const name = (auth.user.value as any).nama_lengkap || auth.user.value.name || 'User'
+  return name.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+})
+</script>
+
 <template>
   <div class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-display text-[#111816] dark:text-white">
     <!-- Top Navigation Bar -->
@@ -10,11 +35,18 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <button class="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#f0f4f3] hover:bg-[#e0e8e5] dark:bg-white/10 dark:hover:bg-white/20 transition-colors text-[#111816] dark:text-white gap-2 text-sm font-bold px-4">
+          <button 
+            @click="handleLogout"
+            class="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-[#f0f4f3] hover:bg-[#e0e8e5] dark:bg-white/10 dark:hover:bg-white/20 transition-colors text-[#111816] dark:text-white gap-2 text-sm font-bold px-4"
+          >
             <UIcon name="i-heroicons-arrow-right-start-on-rectangle" class="text-[20px]" />
             <span class="hidden sm:inline">Keluar</span>
           </button>
-          <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200 dark:border-white/10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBFziMoqJcGJraP9IhKzBDd22SWXAFSgRlPrBNxEuZEQhSBxMA6tUT5HfjkUvCo43eUtHKnl5dFvguhDwusmEPaoe7KZx9R5dwKT7XgMIgrXK-KQwIMzWB4ix8NdFYLf1Ihd-UntYYdg1Wthl9cfMUVvLf-CD2Z7guZr_x6BLKBEmUxuYHjMu4NQN_mP0SxwGK5OAQSHvSScMAyZr4Ck-X1shKlnL6p_-wzwWtab5R8xcOFHxS-pbwrmvJfRLoI5lP3vA5YoISnSsU");'></div>
+          
+          <!-- User Avatar with Initials -->
+          <div class="size-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm border border-gray-200 dark:border-white/10">
+            {{ userInitials }}
+          </div>
         </div>
       </div>
     </header>

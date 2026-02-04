@@ -1,6 +1,10 @@
 <script setup lang="ts">
 definePageMeta({ layout: false });
 
+const auth = useAuth()
+const toast = useToast()
+const router = useRouter()
+
 const form = reactive({
   username: "",
   password: "",
@@ -8,11 +12,61 @@ const form = reactive({
 });
 
 const showPassword = ref(false);
+const isLoading = ref(false);
 
-function handleLogin() {
-  console.log("Admin Login", form);
-  // Navigate to admin dashboard
-  navigateTo('/admin');
+// Check if already logged in
+onMounted(() => {
+  auth.initAuth()
+  if (auth.isAuthenticated.value) {
+    if (auth.role.value === 'admin') {
+      router.push('/admin')
+    } else if (auth.role.value === 'prodi') {
+      router.push('/admin') // Prodi staff uses admin panel
+    }
+  }
+})
+
+async function handleLogin() {
+  if (!form.username || !form.password) {
+    toast.add({
+      title: 'Validasi Gagal',
+      description: 'Mohon isi semua field',
+      color: 'error'
+    })
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const response = await auth.loginAdmin({
+      username: form.username,
+      password: form.password
+    })
+
+    if (response.success) {
+      toast.add({
+        title: 'Login Berhasil!',
+        description: `Selamat datang, ${auth.user.value?.name || 'Admin'}`,
+        color: 'success'
+      })
+      router.push('/admin')
+    } else {
+      toast.add({
+        title: 'Login Gagal',
+        description: response.message || 'Username atau password salah',
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: 'Gagal terhubung ke server',
+      color: 'error'
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -44,13 +98,14 @@ function handleLogin() {
           <form @submit.prevent="handleLogin" class="p-8 space-y-5">
             <!-- Staff ID Field -->
             <label class="flex flex-col gap-1.5">
-              <span class="text-[#111816] dark:text-gray-200 text-sm font-semibold ml-1">ID Staf atau Email</span>
+              <span class="text-[#111816] dark:text-gray-200 text-sm font-semibold ml-1">Username</span>
               <div class="relative">
                 <input 
                   v-model="form.username"
                   class="form-input w-full rounded-lg border border-[#dbe6e2] dark:border-[#4a6b5d] bg-white dark:bg-[#10221c] text-[#111816] dark:text-white h-12 px-4 placeholder:text-[#61897c]/60 dark:placeholder:text-[#4a6b5d] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" 
-                  placeholder="Masukkan ID staf anda" 
+                  placeholder="Masukkan username anda" 
                   type="text"
+                  required
                 />
               </div>
             </label>
@@ -66,13 +121,14 @@ function handleLogin() {
                   :type="showPassword ? 'text' : 'password'"
                   class="form-input w-full rounded-lg border border-[#dbe6e2] dark:border-[#4a6b5d] bg-white dark:bg-[#10221c] text-[#111816] dark:text-white h-12 pl-4 pr-12 placeholder:text-[#61897c]/60 dark:placeholder:text-[#4a6b5d] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" 
                   placeholder="Masukkan kata sandi" 
+                  required
                 />
                 <button 
                   type="button"
                   @click="showPassword = !showPassword"
                   class="absolute right-0 top-0 h-full px-3 text-[#61897c] hover:text-primary transition-colors flex items-center justify-center rounded-r-lg"
                 >
-                  <span class="material-symbols-outlined text-[20px]">visibility</span>
+                  <span class="material-symbols-outlined text-[20px]">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
             </label>
@@ -87,9 +143,14 @@ function handleLogin() {
             </div>
 
             <!-- Submit Button -->
-            <button type="submit" class="group flex w-full cursor-pointer items-center justify-center rounded-lg h-12 bg-primary hover:bg-emerald-600 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-all shadow-[0_2px_4px_rgba(16,183,127,0.2)] hover:shadow-[0_4px_12px_rgba(16,183,127,0.3)] mt-2">
-              <span class="material-symbols-outlined text-[18px] mr-2 group-hover:-translate-x-0.5 transition-transform">login</span>
-              <span>Masuk</span>
+            <button 
+              type="submit" 
+              :disabled="isLoading"
+              class="group flex w-full cursor-pointer items-center justify-center rounded-lg h-12 bg-primary hover:bg-emerald-600 text-white text-sm font-bold leading-normal tracking-[0.015em] transition-all shadow-[0_2px_4px_rgba(16,183,127,0.2)] hover:shadow-[0_4px_12px_rgba(16,183,127,0.3)] mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="isLoading" class="material-symbols-outlined text-[18px] mr-2 animate-spin">progress_activity</span>
+              <span v-else class="material-symbols-outlined text-[18px] mr-2 group-hover:-translate-x-0.5 transition-transform">login</span>
+              <span>{{ isLoading ? 'Memproses...' : 'Masuk' }}</span>
             </button>
           </form>
 
@@ -101,6 +162,12 @@ function handleLogin() {
             </p>
           </div>
         </div>
+
+        <!-- Back to Pendaftar Login -->
+        <NuxtLink to="/login" class="mt-6 flex items-center gap-2 text-sm font-medium text-[#61897c] hover:text-primary transition-colors">
+          <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <span>Kembali ke Login Pendaftar</span>
+        </NuxtLink>
 
         <!-- Bottom Copyright/Info -->
         <div class="mt-8 flex flex-col items-center gap-4 text-center">

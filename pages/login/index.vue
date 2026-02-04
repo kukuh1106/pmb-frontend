@@ -1,17 +1,67 @@
 <script setup lang="ts">
 definePageMeta({ layout: false });
 
+const auth = useAuth()
+const toast = useToast()
+const router = useRouter()
+
 const form = reactive({
   nomor_pendaftaran: "",
   kode_akses: "",
 });
 
 const showPassword = ref(false);
+const isLoading = ref(false);
 
-function handleLogin() {
-  console.log("Login", form);
-  // Navigate to /pendaftar
-  useRouter().push('/pendaftar');
+// Check if already logged in
+onMounted(() => {
+  auth.initAuth()
+  if (auth.isAuthenticated.value && auth.role.value === 'pendaftar') {
+    router.push('/pendaftar')
+  }
+})
+
+async function handleLogin() {
+  if (!form.nomor_pendaftaran || !form.kode_akses) {
+    toast.add({
+      title: 'Validasi Gagal',
+      description: 'Mohon isi semua field',
+      color: 'error'
+    })
+    return
+  }
+
+  isLoading.value = true
+
+  try {
+    const response = await auth.loginPendaftar({
+      nomor_pendaftaran: form.nomor_pendaftaran,
+      kode_akses: form.kode_akses
+    })
+
+    if (response.success) {
+      toast.add({
+        title: 'Login Berhasil!',
+        description: 'Selamat datang kembali',
+        color: 'success'
+      })
+      router.push('/pendaftar')
+    } else {
+      toast.add({
+        title: 'Login Gagal',
+        description: response.message || 'Nomor pendaftaran atau kode akses salah',
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    toast.add({
+      title: 'Error',
+      description: 'Gagal terhubung ke server',
+      color: 'error'
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -47,7 +97,8 @@ function handleLogin() {
             <input 
               v-model="form.nomor_pendaftaran"
               class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111816] dark:text-white dark:bg-[#23342f] focus:outline-0 focus:ring-1 focus:ring-primary border border-[#dbe6e2] dark:border-[#2a3e35] bg-white focus:border-primary h-14 placeholder:text-[#61897c] dark:placeholder:text-gray-500 p-[15px] text-base font-normal leading-normal transition-all" 
-              placeholder="e.g., 2023-PG-1029" 
+              placeholder="e.g., PMB202600001" 
+              required
             />
           </label>
 
@@ -62,6 +113,7 @@ function handleLogin() {
                 :type="showPassword ? 'text' : 'password'"
                 class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#111816] dark:text-white dark:bg-[#23342f] focus:outline-0 focus:ring-1 focus:ring-primary border border-[#dbe6e2] dark:border-[#2a3e35] bg-white focus:border-primary h-14 placeholder:text-[#61897c] dark:placeholder:text-gray-500 p-[15px] pr-12 text-base font-normal leading-normal transition-all" 
                 placeholder="••••••••" 
+                required
               />
               <div class="absolute right-0 top-0 h-full flex items-center pr-4 z-10">
                 <button type="button" @click="showPassword = !showPassword" class="text-[#61897c] hover:text-primary dark:text-gray-400 dark:hover:text-primary flex items-center justify-center transition-colors focus:outline-none">
@@ -72,8 +124,13 @@ function handleLogin() {
           </label>
 
           <!-- Submit Button -->
-          <button type="submit" class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary hover:bg-[#0e9f6e] text-[#111816] dark:text-white text-base font-bold leading-normal tracking-[0.015em] transition-colors shadow-sm mt-2">
-            <span class="truncate text-white">Masuk</span>
+          <button 
+            type="submit" 
+            :disabled="isLoading"
+            class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-5 bg-primary hover:bg-[#0e9f6e] text-white text-base font-bold leading-normal tracking-[0.015em] transition-colors shadow-sm mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="isLoading" class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
+            <span class="truncate">{{ isLoading ? 'Memproses...' : 'Masuk' }}</span>
           </button>
         </form>
 
