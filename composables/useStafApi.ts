@@ -38,9 +38,40 @@ export const useStafApi = () => {
     return api.get<any>(`/prodi/pendaftar/${id}`)
   }
 
+  // Input nilai ujian
+  const inputNilai = async (id: number, nilai_ujian: number): Promise<ApiResponse<any>> => {
+    return api.put<any>(`/prodi/pendaftar/${id}/nilai`, { nilai_ujian })
+  }
+
+  // Set status kelulusan
+  const setStatusKelulusan = async (
+    id: number, 
+    status_kelulusan: 'lulus' | 'tidak_lulus' | 'belum_diproses'
+  ): Promise<ApiResponse<any>> => {
+    return api.put<any>(`/prodi/pendaftar/${id}/status`, { status_kelulusan })
+  }
+
+  // Send notification to pendaftar
+  const sendNotifikasi = async (
+    id: number, 
+    type: 'hasil' | 'custom',
+    subject?: string,
+    message?: string
+  ): Promise<ApiResponse<any>> => {
+    const payload: any = { type }
+    if (type === 'custom') {
+      payload.subject = subject
+      payload.message = message
+    }
+    return api.post<any>(`/prodi/notifikasi/${id}`, payload)
+  }
+
   return {
     getDashboard,
     getPendaftarList,
-    getPendaftarDetail
+    getPendaftarDetail,
+    inputNilai,
+    setStatusKelulusan,
+    sendNotifikasi
   }
 }

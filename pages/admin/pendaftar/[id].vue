@@ -30,6 +30,21 @@ const previewDocUrl = ref('')
 const previewDocType = ref<'image' | 'pdf' | 'other'>('other')
 const previewDocName = ref('')
 
+// Modal state for nilai input
+const nilaiModalOpen = ref(false)
+const nilaiInput = ref<number | null>(null)
+
+// Modal state for kelulusan
+const kelulusanModalOpen = ref(false)
+const selectedKelulusan = ref<'lulus' | 'tidak_lulus' | 'belum_diproses'>('belum_diproses')
+
+// Modal state for notifikasi
+const notifikasiModalOpen = ref(false)
+const notifikasiType = ref<'hasil' | 'custom'>('hasil')
+const notifikasiSubject = ref('')
+const notifikasiMessage = ref('')
+const isSendingNotifikasi = ref(false)
+
 // Determine if user is admin or prodi
 const isAdmin = computed(() => auth.role.value === 'admin')
 
@@ -183,6 +198,139 @@ const openPreview = (doc: Dokumen) => {
   }
   
   previewModalOpen.value = true
+}
+
+// Nilai Modal Actions
+const openNilaiModal = () => {
+  nilaiInput.value = pendaftar.value?.pendaftar?.nilai_ujian ?? null
+  nilaiModalOpen.value = true
+}
+
+const submitNilai = async () => {
+  if (nilaiInput.value === null || nilaiInput.value < 0 || nilaiInput.value > 100) {
+    toast.add({
+      title: 'Error',
+      description: 'Nilai harus antara 0 - 100',
+      color: 'error'
+    })
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const res = await stafApi.inputNilai(pendaftarId.value, nilaiInput.value)
+    
+    if (res.success) {
+      toast.add({
+        title: 'Berhasil',
+        description: 'Nilai ujian berhasil disimpan',
+        color: 'success'
+      })
+      // Update local state
+      if (pendaftar.value?.pendaftar) {
+        pendaftar.value.pendaftar.nilai_ujian = nilaiInput.value
+      }
+      nilaiModalOpen.value = false
+    } else {
+      toast.add({
+        title: 'Gagal',
+        description: res.message || 'Gagal menyimpan nilai',
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    console.error('Input nilai error:', error)
+    toast.add({ title: 'Error', description: 'Terjadi kesalahan sistem', color: 'error' })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Kelulusan Modal Actions
+const openKelulusanModal = () => {
+  selectedKelulusan.value = pendaftar.value?.pendaftar?.status_kelulusan || 'belum_diproses'
+  kelulusanModalOpen.value = true
+}
+
+const submitKelulusan = async () => {
+  isSubmitting.value = true
+  try {
+    const res = await stafApi.setStatusKelulusan(pendaftarId.value, selectedKelulusan.value)
+    
+    if (res.success) {
+      toast.add({
+        title: 'Berhasil',
+        description: 'Status kelulusan berhasil diperbarui',
+        color: 'success'
+      })
+      // Update local state
+      if (pendaftar.value?.pendaftar) {
+        pendaftar.value.pendaftar.status_kelulusan = selectedKelulusan.value
+        pendaftar.value.pendaftar.status_pendaftaran = 'selesai'
+      }
+      kelulusanModalOpen.value = false
+    } else {
+      toast.add({
+        title: 'Gagal',
+        description: res.message || 'Gagal mengubah status kelulusan',
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    console.error('Set kelulusan error:', error)
+    toast.add({ title: 'Error', description: 'Terjadi kesalahan sistem', color: 'error' })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+// Notifikasi Modal Actions
+const openNotifikasiModal = () => {
+  notifikasiType.value = 'hasil'
+  notifikasiSubject.value = ''
+  notifikasiMessage.value = ''
+  notifikasiModalOpen.value = true
+}
+
+const submitNotifikasi = async () => {
+  if (notifikasiType.value === 'custom' && (!notifikasiSubject.value.trim() || !notifikasiMessage.value.trim())) {
+    toast.add({
+      title: 'Error',
+      description: 'Subject dan pesan wajib diisi untuk notifikasi custom',
+      color: 'error'
+    })
+    return
+  }
+
+  isSendingNotifikasi.value = true
+  try {
+    const res = await stafApi.sendNotifikasi(
+      pendaftarId.value, 
+      notifikasiType.value, 
+      notifikasiSubject.value,
+      notifikasiMessage.value
+    )
+    
+    if (res.success) {
+      toast.add({
+        title: 'Berhasil',
+        description: 'Notifikasi WhatsApp berhasil dikirim',
+        color: 'success'
+      })
+      notifikasiModalOpen.value = false
+    } else {
+      toast.add({
+        title: 'Gagal',
+        description: res.message || 'Gagal mengirim notifikasi',
+        color: 'error'
+      })
+    }
+  } catch (error) {
+    console.error('Send notifikasi error:', error)
+    toast.add({ title: 'Error', description: 'Terjadi kesalahan sistem', color: 'error' })
+  } finally {
+    isSendingNotifikasi.value = false
+  }
 }
 </script>
 
@@ -387,6 +535,58 @@ const openPreview = (doc: Dokumen) => {
           </div>
         </div>
 
+        <!-- Action Panel (Staf Prodi Only) -->
+        <div v-if="!isAdmin" class="bg-white dark:bg-surface-dark rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <UIcon name="i-heroicons-cog-6-tooth" class="text-primary" />
+            Aksi Staf Prodi
+          </h3>
+          
+          <div class="space-y-3">
+            <!-- Input Nilai -->
+            <button 
+              @click="openNilaiModal"
+              class="w-full flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <UIcon name="i-heroicons-pencil-square" class="text-xl" />
+              </div>
+              <div class="text-left">
+                <p class="font-semibold text-sm">Input Nilai Ujian</p>
+                <p class="text-xs text-blue-600 dark:text-blue-500">Masukkan atau update nilai ujian pendaftar</p>
+              </div>
+            </button>
+
+            <!-- Set Status Kelulusan -->
+            <button 
+              @click="openKelulusanModal"
+              class="w-full flex items-center gap-3 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <UIcon name="i-heroicons-academic-cap" class="text-xl" />
+              </div>
+              <div class="text-left">
+                <p class="font-semibold text-sm">Set Status Kelulusan</p>
+                <p class="text-xs text-emerald-600 dark:text-emerald-500">Tentukan status lulus atau tidak lulus</p>
+              </div>
+            </button>
+
+            <!-- Kirim Notifikasi -->
+            <button 
+              @click="openNotifikasiModal"
+              class="w-full flex items-center gap-3 px-4 py-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors group"
+            >
+              <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="text-xl" />
+              </div>
+              <div class="text-left">
+                <p class="font-semibold text-sm">Kirim Notifikasi WA</p>
+                <p class="text-xs text-purple-600 dark:text-purple-500">Kirim notifikasi hasil ke pendaftar</p>
+              </div>
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
     
@@ -472,6 +672,239 @@ const openPreview = (doc: Dokumen) => {
             <p class="text-slate-500 mb-4">Format file tidak didukung untuk preview.</p>
             <a :href="previewDocUrl" target="_blank" class="text-primary hover:underline">Download File</a>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Nilai Modal -->
+    <div v-if="nilaiModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="nilaiModalOpen = false"></div>
+      <div class="bg-white dark:bg-surface-dark rounded-xl shadow-xl w-full max-w-sm relative z-10 p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <UIcon name="i-heroicons-pencil-square" class="text-2xl" />
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Input Nilai Ujian</h3>
+            <p class="text-sm text-slate-500">Masukkan nilai ujian 0 - 100</p>
+          </div>
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Nilai Ujian</label>
+          <input 
+            v-model.number="nilaiInput"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            class="w-full px-4 py-3 text-2xl font-bold text-center bg-slate-50 dark:bg-black/20 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/50 outline-none"
+            placeholder="0"
+          />
+          <p class="text-xs text-slate-500 mt-2 text-center">Nilai antara 0 sampai 100</p>
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button 
+            @click="nilaiModalOpen = false"
+            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700"
+          >
+            Batal
+          </button>
+          <button 
+            @click="submitNilai"
+            :disabled="isSubmitting || nilaiInput === null"
+            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <UIcon v-if="isSubmitting" name="i-heroicons-arrow-path" class="animate-spin" />
+            Simpan Nilai
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Set Status Kelulusan Modal -->
+    <div v-if="kelulusanModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="kelulusanModalOpen = false"></div>
+      <div class="bg-white dark:bg-surface-dark rounded-xl shadow-xl w-full max-w-md relative z-10 p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <UIcon name="i-heroicons-academic-cap" class="text-2xl" />
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Set Status Kelulusan</h3>
+            <p class="text-sm text-slate-500">Tentukan status kelulusan pendaftar</p>
+          </div>
+        </div>
+        
+        <div class="mb-6 space-y-3">
+          <!-- Lulus -->
+          <button 
+            @click="selectedKelulusan = 'lulus'"
+            class="w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all"
+            :class="selectedKelulusan === 'lulus' 
+              ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'"
+          >
+            <div 
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              :class="selectedKelulusan === 'lulus' ? 'bg-green-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+            >
+              <UIcon name="i-heroicons-check" class="text-2xl" />
+            </div>
+            <div class="text-left">
+              <p class="font-bold text-slate-900 dark:text-white">Lulus</p>
+              <p class="text-sm text-slate-500">Pendaftar dinyatakan lulus seleksi</p>
+            </div>
+          </button>
+
+          <!-- Tidak Lulus -->
+          <button 
+            @click="selectedKelulusan = 'tidak_lulus'"
+            class="w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all"
+            :class="selectedKelulusan === 'tidak_lulus' 
+              ? 'border-red-500 bg-red-50 dark:bg-red-900/20' 
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'"
+          >
+            <div 
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              :class="selectedKelulusan === 'tidak_lulus' ? 'bg-red-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+            >
+              <UIcon name="i-heroicons-x-mark" class="text-2xl" />
+            </div>
+            <div class="text-left">
+              <p class="font-bold text-slate-900 dark:text-white">Tidak Lulus</p>
+              <p class="text-sm text-slate-500">Pendaftar tidak memenuhi kriteria</p>
+            </div>
+          </button>
+
+          <!-- Belum Diproses -->
+          <button 
+            @click="selectedKelulusan = 'belum_diproses'"
+            class="w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all"
+            :class="selectedKelulusan === 'belum_diproses' 
+              ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' 
+              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'"
+          >
+            <div 
+              class="w-12 h-12 rounded-full flex items-center justify-center"
+              :class="selectedKelulusan === 'belum_diproses' ? 'bg-yellow-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+            >
+              <UIcon name="i-heroicons-clock" class="text-2xl" />
+            </div>
+            <div class="text-left">
+              <p class="font-bold text-slate-900 dark:text-white">Belum Diproses</p>
+              <p class="text-sm text-slate-500">Status belum ditentukan</p>
+            </div>
+          </button>
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button 
+            @click="kelulusanModalOpen = false"
+            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700"
+          >
+            Batal
+          </button>
+          <button 
+            @click="submitKelulusan"
+            :disabled="isSubmitting"
+            class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <UIcon v-if="isSubmitting" name="i-heroicons-arrow-path" class="animate-spin" />
+            Simpan Status
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kirim Notifikasi Modal -->
+    <div v-if="notifikasiModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="notifikasiModalOpen = false"></div>
+      <div class="bg-white dark:bg-surface-dark rounded-xl shadow-xl w-full max-w-md relative z-10 p-6">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="text-2xl" />
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Kirim Notifikasi WA</h3>
+            <p class="text-sm text-slate-500">Kirim notifikasi ke {{ pendaftar?.pendaftar?.no_whatsapp }}</p>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Jenis Notifikasi</label>
+          <div class="flex gap-2">
+            <button 
+              @click="notifikasiType = 'hasil'"
+              class="flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-all"
+              :class="notifikasiType === 'hasil' 
+                ? 'bg-purple-100 border-purple-500 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' 
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'"
+            >
+              Hasil Ujian
+            </button>
+            <button 
+              @click="notifikasiType = 'custom'"
+              class="flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-all"
+              :class="notifikasiType === 'custom' 
+                ? 'bg-purple-100 border-purple-500 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' 
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'"
+            >
+              Pesan Custom
+            </button>
+          </div>
+        </div>
+
+        <div v-if="notifikasiType === 'hasil'" class="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+          <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">
+            <strong>Preview pesan:</strong>
+          </p>
+          <p class="text-sm text-slate-700 dark:text-slate-300">
+            Halo <strong>{{ pendaftar?.pendaftar?.nama_lengkap }}</strong>,<br><br>
+            Hasil Seleksi PMB Pascasarjana:<br>
+            Status: <strong class="capitalize">{{ pendaftar?.pendaftar?.status_kelulusan?.replace('_', ' ') || 'Belum diproses' }}</strong><br>
+            <span v-if="pendaftar?.pendaftar?.nilai_ujian">Nilai: <strong>{{ pendaftar?.pendaftar?.nilai_ujian }}</strong></span>
+          </p>
+        </div>
+
+        <div v-if="notifikasiType === 'custom'" class="space-y-4 mb-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+            <input 
+              v-model="notifikasiSubject"
+              type="text"
+              class="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+              placeholder="Subject notifikasi..."
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Pesan</label>
+            <textarea 
+              v-model="notifikasiMessage"
+              rows="4"
+              class="w-full px-3 py-2 bg-white dark:bg-black/20 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/50 outline-none resize-none"
+              placeholder="Tulis pesan notifikasi..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="flex gap-3 justify-end">
+          <button 
+            @click="notifikasiModalOpen = false"
+            class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700"
+          >
+            Batal
+          </button>
+          <button 
+            @click="submitNotifikasi"
+            :disabled="isSendingNotifikasi || (notifikasiType === 'custom' && (!notifikasiSubject.trim() || !notifikasiMessage.trim()))"
+            class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <UIcon v-if="isSendingNotifikasi" name="i-heroicons-arrow-path" class="animate-spin" />
+            <UIcon v-else name="i-heroicons-paper-airplane" />
+            Kirim Notifikasi
+          </button>
         </div>
       </div>
     </div>
