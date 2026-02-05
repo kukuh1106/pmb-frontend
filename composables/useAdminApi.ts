@@ -157,5 +157,8 @@ export const useAdminApi = () => {
     deleteUser,
     // Pendaftar
     getPendaftarList,
+    getPendaftarDetail: async (id: number): Promise<ApiResponse<any>> => {
+      return api.get<any>(`/admin/pendaftar/${id}`)
+    }
   }
 }
