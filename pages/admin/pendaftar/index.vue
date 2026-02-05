@@ -37,10 +37,23 @@ const loadData = async () => {
       search: debouncedSearch.value,
     }
 
-    if (selectedProdi.value) params.prodi_id = selectedProdi.value
+    if (auth.role.value === 'prodi') {
+      // For Prodi role, backend automatically handles prodi_id
+      // But we can filter by status
+    } else {
+      // For Admin role, we can filter by prodi explicitely
+      if (selectedProdi.value) params.prodi_id = selectedProdi.value
+    }
+    
     if (selectedStatus.value) params.status_kelulusan = selectedStatus.value
 
-    const res = await adminApi.getPendaftarList(params)
+    let res
+    if (auth.role.value === 'prodi') {
+       const stafApi = useStafApi()
+       res = await stafApi.getPendaftarList(params)
+    } else {
+       res = await adminApi.getPendaftarList(params)
+    }
     
     if (res.success && res.data) {
       pendaftarList.value = res.data
@@ -61,14 +74,18 @@ const loadData = async () => {
 
 // Initial load
 onMounted(async () => {
-  // Load Prodi for filter
-  try {
-    const prodiRes = await prodiApi.getProdiAll()
-    if (prodiRes.success && prodiRes.data) {
-      prodiList.value = prodiRes.data
+  auth.initAuth()
+  
+  // Load Prodi for filter (Only for Admin)
+  if (auth.role.value === 'admin') {
+    try {
+      const prodiRes = await prodiApi.getProdiAll()
+      if (prodiRes.success && prodiRes.data) {
+        prodiList.value = prodiRes.data
+      }
+    } catch (e) {
+      console.error('Failed to load prodi list', e)
     }
-  } catch (e) {
-    console.error('Failed to load prodi list', e)
   }
 
   await loadData()
@@ -168,6 +185,7 @@ const viewDetail = (id: number) => {
       
       <div class="flex gap-4">
         <select 
+          v-if="auth.role.value === 'admin'"
           v-model="selectedProdi"
           class="px-3 py-2 bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 text-slate-700 dark:text-slate-200 min-w-[200px]"
         >

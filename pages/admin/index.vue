@@ -20,13 +20,27 @@ onMounted(async () => {
   
   try {
     // Fetch dashboard stats
-    const dashboardRes = await adminApi.getDashboard()
+    let dashboardRes
+    if (auth.role.value === 'prodi') {
+      const stafApi = useStafApi()
+      dashboardRes = await stafApi.getDashboard()
+    } else {
+      dashboardRes = await adminApi.getDashboard()
+    }
+
     if (dashboardRes.success && dashboardRes.data) {
       dashboard.value = dashboardRes.data
     }
 
     // Fetch recent pendaftar
-    const pendaftarRes = await adminApi.getPendaftarList({ per_page: 5 })
+    let pendaftarRes
+    if (auth.role.value === 'prodi') {
+      const stafApi = useStafApi()
+      pendaftarRes = await stafApi.getPendaftarList({ per_page: 5 })
+    } else {
+      pendaftarRes = await adminApi.getPendaftarList({ per_page: 5 })
+    }
+    
     if (pendaftarRes.success && pendaftarRes.data) {
       recentPendaftar.value = pendaftarRes.data
     }
@@ -124,11 +138,14 @@ const userName = computed(() => {
           </div>
           <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Pendaftar</h3>
           <p class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mt-1">{{ dashboard.total_pendaftar }}</p>
-          <p class="text-xs text-slate-400 mt-1">Periode aktif</p>
+          <p class="text-xs text-slate-400 mt-1">
+            <span v-if="auth.role.value === 'prodi'">{{ dashboard.prodi_name }}</span>
+            <span v-else>Semua Prodi</span>
+          </p>
         </div>
         
-        <!-- Card 2: Prodi -->
-        <div class="bg-white dark:bg-surface-dark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group">
+        <!-- Card 2: Prodi (Admin Only) -->
+        <div v-if="auth.role.value === 'admin'" class="bg-white dark:bg-surface-dark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group">
           <div class="flex justify-between items-start mb-4">
             <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl text-yellow-600 dark:text-yellow-400 group-hover:scale-110 transition-transform">
               <UIcon name="i-heroicons-building-library" class="text-2xl" />
@@ -170,8 +187,8 @@ const userName = computed(() => {
             
       <!-- Main Content Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Distribution Card (Spans 2 columns) -->
-        <div class="lg:col-span-2 bg-white dark:bg-surface-dark p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <!-- Distribution Card (Admin Only) -->
+        <div v-if="auth.role.value === 'admin'" class="lg:col-span-2 bg-white dark:bg-surface-dark p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6">Distribusi per Program Studi</h3>
           <div class="flex flex-col gap-4">
             <div v-for="(prodi, index) in dashboard.pendaftar_by_prodi" :key="index">

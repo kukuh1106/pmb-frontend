@@ -76,12 +76,9 @@ const systemMenu = computed(() => {
   if (isAdmin) {
     items.push(
       { to: '/admin/users', icon: 'i-heroicons-users', label: 'Kelola Users' },
+      { to: '/admin/settings', icon: 'i-heroicons-cog-6-tooth', label: 'Pengaturan' },
     )
   }
-  
-  items.push(
-    { to: '/admin/settings', icon: 'i-heroicons-cog-6-tooth', label: 'Pengaturan' },
-  )
   
   return items
 })

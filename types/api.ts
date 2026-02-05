@@ -173,6 +173,7 @@ export interface AdminDashboard {
   pendaftar_by_status: Record<string, number>
   kelulusan_by_status: Record<string, number>
   periode_aktif?: PeriodePendaftaran
+  prodi_name?: string
 }
 
 // Request Types

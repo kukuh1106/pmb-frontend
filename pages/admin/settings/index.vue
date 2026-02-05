@@ -7,6 +7,8 @@ definePageMeta({
 
 const adminApi = useAdminApi()
 const toast = useToast()
+const auth = useAuth()
+const router = useRouter()
 
 // Tabs configuration
 const activeTab = ref<'sesi' | 'ruang'>('sesi')
@@ -72,6 +74,10 @@ const loadData = async () => {
 }
 
 onMounted(() => {
+  if (auth.role.value !== 'admin') {
+    router.push('/admin')
+    return
+  }
   loadData()
 })
 
