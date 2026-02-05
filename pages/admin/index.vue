@@ -12,8 +12,35 @@ const isLoading = ref(true)
 const dashboard = ref<AdminDashboard | null>(null)
 const recentPendaftar = ref<Pendaftar[]>([])
 
+// WhatsApp status
+const waStatus = ref<{
+  connected: boolean
+  logged_in: boolean
+  device_id: string | null
+  error: string | null
+} | null>(null)
+const isLoadingWaStatus = ref(false)
+
 // Colors for prodi distribution
 const prodiColors = ['bg-primary', 'bg-blue-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-cyan-500']
+
+// Fetch WhatsApp status
+const fetchWaStatus = async () => {
+  if (auth.role.value !== 'admin') return
+  
+  isLoadingWaStatus.value = true
+  try {
+    const res = await adminApi.getWhatsappStatus()
+    if (res.success && res.data) {
+      waStatus.value = res.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch WA status:', error)
+    waStatus.value = { connected: false, logged_in: false, device_id: null, error: 'Failed to connect' }
+  } finally {
+    isLoadingWaStatus.value = false
+  }
+}
 
 onMounted(async () => {
   auth.initAuth()
@@ -44,6 +71,9 @@ onMounted(async () => {
     if (pendaftarRes.success && pendaftarRes.data) {
       recentPendaftar.value = pendaftarRes.data
     }
+
+    // Fetch WhatsApp status (admin only)
+    await fetchWaStatus()
   } catch (error) {
     console.error('Failed to load dashboard:', error)
   } finally {
@@ -119,7 +149,44 @@ const userName = computed(() => {
             <span v-if="dashboard.periode_aktif" class="font-medium text-primary">{{ dashboard.periode_aktif.nama }}</span>
           </p>
         </div>
-        <div class="flex gap-3">
+        <div class="flex gap-3 items-center">
+          <!-- WhatsApp Status Indicator (Admin Only) -->
+          <div v-if="auth.role.value === 'admin'" class="flex items-center gap-2">
+            <button 
+              @click="fetchWaStatus"
+              :disabled="isLoadingWaStatus"
+              class="px-3 py-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+              :class="{
+                'border-green-300 dark:border-green-700': waStatus?.logged_in,
+                'border-red-300 dark:border-red-700': waStatus && !waStatus.logged_in,
+                'border-slate-200 dark:border-slate-700': !waStatus
+              }"
+              title="Status koneksi WhatsApp (GOWA)"
+            >
+              <UIcon v-if="isLoadingWaStatus" name="i-heroicons-arrow-path" class="text-[16px] animate-spin text-slate-400" />
+              <template v-else>
+                <span 
+                  class="w-2 h-2 rounded-full"
+                  :class="{
+                    'bg-green-500': waStatus?.logged_in,
+                    'bg-red-500': waStatus && !waStatus.logged_in,
+                    'bg-slate-300': !waStatus
+                  }"
+                ></span>
+                <span class="hidden sm:inline text-slate-600 dark:text-slate-300">
+                  {{ waStatus?.logged_in ? 'WA Terhubung' : waStatus ? 'WA Offline' : 'WA Status' }}
+                </span>
+                <UIcon name="i-heroicons-chat-bubble-left-ellipsis" class="text-[16px] sm:hidden" 
+                  :class="{
+                    'text-green-500': waStatus?.logged_in,
+                    'text-red-500': waStatus && !waStatus.logged_in,
+                    'text-slate-400': !waStatus
+                  }"
+                />
+              </template>
+            </button>
+          </div>
+
           <button class="px-4 py-2 bg-white dark:bg-surface-dark border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
             <UIcon name="i-heroicons-arrow-down-tray" class="text-[18px]" />
             Unduh Laporan

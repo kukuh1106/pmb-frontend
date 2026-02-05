@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
   const auth = useAuth()
   auth.initAuth()
 
-  const publicRoutes = ['/', '/login', '/login/admin', '/register', '/cek-kelulusan']
+  const publicRoutes = ['/', '/login', '/login/admin', '/register', '/cek-kelulusan', '/program-studi', '/cara-mendaftar']
   const pendaftarRoutes = ['/pendaftar']
   const adminRoutes = ['/admin']
 

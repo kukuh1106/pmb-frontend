@@ -159,6 +159,15 @@ export const useAdminApi = () => {
     getPendaftarList,
     getPendaftarDetail: async (id: number): Promise<ApiResponse<any>> => {
       return api.get<any>(`/admin/pendaftar/${id}`)
+    },
+    // WhatsApp Status
+    getWhatsappStatus: async (): Promise<ApiResponse<{
+      connected: boolean
+      logged_in: boolean
+      device_id: string | null
+      error: string | null
+    }>> => {
+      return api.get('/admin/whatsapp/status')
     }
   }
 }
